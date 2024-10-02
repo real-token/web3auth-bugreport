@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { Web3AuthNoModal } from "@web3auth/no-modal";
-import { CHAIN_NAMESPACES, SafeEventEmitterProvider, WALLET_ADAPTERS } from "@web3auth/base";
+import { CHAIN_NAMESPACES, CustomChainConfig, SafeEventEmitterProvider, WALLET_ADAPTERS } from "@web3auth/base";
 import { AuthAdapter, AuthLoginParams } from "@web3auth/auth-adapter";
 import { CoinbaseAdapter } from '@web3auth/coinbase-adapter'
-import { WalletConnectV2Adapter } from "@web3auth/wallet-connect-v2-adapter"
 
 import "./App.css";
 import RPC from "./web3RPC"; // for using web3.js
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
+
 
 const clientId = "BEglQSgt4cUWcj6SKRdu5QkOXTsePmMcusG5EAoyjyOYKlVRjIF1iCNnMOTfpzCiunHRrMui8TIwQPXdkQ8Yxuk"; // get from https://dashboard.web3auth.io
 
@@ -19,13 +19,13 @@ function App() {
     const init = async () => {
       try {
         const chainConfig = {
-          displayName: "Ethereum Mainnet",
-          chainId: "0x1",
-          rpcTarget: `https://rpc.ankr.com/eth`,
-          blockExplorerUrl: "https://etherscan.io/",
-          ticker: "ETH",
-          tickerName: "Ethereum",
-          logo: "https://images.toruswallet.io/eth.svg",
+          displayName: "gnosis",
+          chainId: "0x64",
+          rpcTarget: `https://rpc.gnosis.gateway.fm`,
+          blockExplorerUrl: "https://gnosisscan.io/",
+          ticker: "XDAI",
+          tickerName: "XDAI",
+          logo: "https://images.toruswallet.io/xdai.svg",
           chainNamespace: CHAIN_NAMESPACES.EIP155,
         }
         const privateKeyProvider = new EthereumPrivateKeyProvider({ config: { chainConfig } });
@@ -38,13 +38,12 @@ function App() {
 
         setWeb3auth(web3auth);
 
-        const wcAdapter = new WalletConnectV2Adapter();
-        const coinbase = new CoinbaseAdapter();
+        const coinbase = new CoinbaseAdapter({ adapterSettings: { options: "eoaOnly" }});
         const authAdapter = new AuthAdapter();
         web3auth.configureAdapter(authAdapter);
         
         // vvvv COMMENTING THIS LINE MAKES THE CODE WORKS vvvv 
-        web3auth.configureAdapter(wcAdapter)
+        // web3auth.configureAdapter(walletConnectV2Adapter)
 
         web3auth.configureAdapter(coinbase)
 
@@ -75,15 +74,6 @@ function App() {
       return;
     }
     const web3authProvider = await web3auth.connectTo<void>(WALLET_ADAPTERS.COINBASE);
-    setProvider(web3authProvider);
-  }
-
-  const loginWalletConnect = async () => {
-    if (!web3auth) {
-      uiConsole("web3auth not initialized yet");
-      return;
-    }
-    const web3authProvider = await web3auth.connectTo<void>(WALLET_ADAPTERS.WALLET_CONNECT_V2);
     setProvider(web3authProvider);
   }
 
@@ -129,7 +119,7 @@ function App() {
       uiConsole("provider not initialized yet");
       return;
     }
-    const newChain = {
+    const newChain: CustomChainConfig = {
       chainId: "0x5",
       displayName: "Goerli",
       chainNamespace: CHAIN_NAMESPACES.EIP155,
@@ -137,7 +127,7 @@ function App() {
       ticker: "ETH",
       decimals: 18,
       rpcTarget: "https://rpc.ankr.com/eth_goerli",
-      blockExplorer: "https://goerli.etherscan.io",
+      blockExplorerUrl: "https://goerli.etherscan.io",
     };
     await web3auth?.addChain(newChain);
     uiConsole("New Chain Added");
@@ -148,7 +138,7 @@ function App() {
       uiConsole("provider not initialized yet");
       return;
     }
-    await web3auth?.switchChain({ chainId: "0x5" });
+    await web3auth?.switchChain({ chainId: "0x1" });
     uiConsole("Chain Switched");
   };
 
@@ -282,9 +272,9 @@ function App() {
     <button onClick={loginCoinbase} className="card">
       Login coinbase
     </button>
-    <button onClick={loginWalletConnect} className="card">
-      Login walletconnect
-    </button>
+    {/* <button onClick={loginWalletConnect} className="card"> */}
+      {/* Login walletconnect */}
+    {/* </button> */}
     </>
   
   );
