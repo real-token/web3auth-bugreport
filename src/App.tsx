@@ -41,10 +41,6 @@ function App() {
         const coinbase = new CoinbaseAdapter({ adapterSettings: { options: "eoaOnly" }});
         const authAdapter = new AuthAdapter();
         web3auth.configureAdapter(authAdapter);
-        
-        // vvvv COMMENTING THIS LINE MAKES THE CODE WORKS vvvv 
-        // web3auth.configureAdapter(walletConnectV2Adapter)
-
         web3auth.configureAdapter(coinbase)
 
         await web3auth.init();
