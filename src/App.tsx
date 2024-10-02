@@ -43,7 +43,6 @@ function App() {
         const authAdapter = new AuthAdapter();
         web3auth.configureAdapter(authAdapter);
         
-        // vvvv COMMENTING THIS LINE MAKES THE CODE WORKS vvvv 
         web3auth.configureAdapter(wcAdapter)
 
         web3auth.configureAdapter(coinbase)
@@ -65,7 +64,7 @@ function App() {
       uiConsole("web3auth not initialized yet");
       return;
     }
-    const web3authProvider = await web3auth.connectTo<AuthLoginParams>(WALLET_ADAPTERS.AUTH, { loginProvider: "google" });
+    const web3authProvider = await web3auth.connectTo<AuthLoginParams>(WALLET_ADAPTERS.AUTH, { loginProvider: "apple" });
     setProvider(web3authProvider);
   };
 
