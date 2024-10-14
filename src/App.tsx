@@ -22,10 +22,29 @@ const clientId =
 
 function App() {
   const [web3auth, setWeb3auth] = useState<Web3AuthNoModal | null>(null);
+  const [isReady, setIsReady] = useState<'yes' | 'no'>('no')
   const [provider, setProvider] = useState<SafeEventEmitterProvider | null>(
     null
   );
+  const [logBox, setLogBox] = useState<string>('') 
+  const [startTime, setStartTime] = useState<number | undefined>(undefined)
 
+  useEffect(() => {
+    const readyListener = () => {
+      setIsReady('yes')
+      if (startTime) {
+        const timeUserCantDoNothing = Math.floor((+new Date() - startTime) / 1000)
+        setLogBox(`user couldn't login for ${timeUserCantDoNothing} seconds!`)
+      }
+    }
+
+    web3auth?.addListener('errored', readyListener)
+    web3auth?.addListener('ready', readyListener)
+    return () => {
+      web3auth?.removeListener('errored', readyListener)
+      web3auth?.removeListener('ready', readyListener)
+    }
+  }, [web3auth, startTime])
   useEffect(() => {
     const init = async () => {
       try {
@@ -93,13 +112,18 @@ function App() {
       uiConsole("web3auth not initialized yet");
       return;
     }
-    if (web3auth.status === "ready") {
-      const web3authProvider = await web3auth.connectTo<AuthLoginParams>(
-        WALLET_ADAPTERS.AUTH,
-        { loginProvider: "google" }
-      );
-      setProvider(web3authProvider);
-    }
+      setIsReady('no')
+      setStartTime(+new Date())
+      try {
+        const web3authProvider = await web3auth.connectTo<AuthLoginParams>(
+          WALLET_ADAPTERS.AUTH,
+          { loginProvider: "google" }
+        );
+        setProvider(web3authProvider);
+      }
+      catch (e) {
+        console.error(e)
+      }
   };
 
   const loginCoinbase = async () => {
@@ -255,6 +279,8 @@ function App() {
   const loggedInView = (
     <>
       <div className="flex-container">
+      <div>{logBox}</div>
+      <div>`Is web3auth ready? `{isReady}</div>
         <div>
           <button onClick={getUserInfo} className="card">
             Get User Info
@@ -328,6 +354,8 @@ function App() {
       <button onClick={loginWalletConnect} className="card">
         Login walletconnect
       </button>
+      <div>{logBox}</div>
+      <div>`Is web3auth ready? `{isReady}</div>
     </>
   );
 
