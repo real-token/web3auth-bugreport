@@ -1,19 +1,30 @@
 import { useEffect, useState } from "react";
 import { Web3AuthNoModal } from "@web3auth/no-modal";
-import { CHAIN_NAMESPACES, SafeEventEmitterProvider, WALLET_ADAPTERS } from "@web3auth/base";
+import {
+  CHAIN_NAMESPACES,
+  SafeEventEmitterProvider,
+  WALLET_ADAPTERS,
+} from "@web3auth/base";
 import { AuthAdapter, AuthLoginParams } from "@web3auth/auth-adapter";
-import { CoinbaseAdapter } from '@web3auth/coinbase-adapter'
-import { WalletConnectV2Adapter } from "@web3auth/wallet-connect-v2-adapter"
+import { CoinbaseAdapter } from "@web3auth/coinbase-adapter";
+import {
+  WalletConnectV2Adapter,
+  getWalletConnectV2Settings,
+} from "@web3auth/wallet-connect-v2-adapter";
+import { WalletConnectModal } from "@walletconnect/modal";
 
 import "./App.css";
 import RPC from "./web3RPC"; // for using web3.js
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
 
-const clientId = "BEglQSgt4cUWcj6SKRdu5QkOXTsePmMcusG5EAoyjyOYKlVRjIF1iCNnMOTfpzCiunHRrMui8TIwQPXdkQ8Yxuk"; // get from https://dashboard.web3auth.io
+const clientId =
+  "BHgArYmWwSeq21czpcarYh0EVq2WWOzflX-NTK-tY1-1pauPzHKRRLgpABkmYiIV_og9jAvoIxQ8L3Smrwe04Lw"; // get from https://dashboard.web3auth.io
 
 function App() {
   const [web3auth, setWeb3auth] = useState<Web3AuthNoModal | null>(null);
-  const [provider, setProvider] = useState<SafeEventEmitterProvider | null>(null);
+  const [provider, setProvider] = useState<SafeEventEmitterProvider | null>(
+    null
+  );
 
   useEffect(() => {
     const init = async () => {
@@ -21,31 +32,49 @@ function App() {
         const chainConfig = {
           displayName: "Ethereum Mainnet",
           chainId: "0x1",
-          rpcTarget: `https://rpc.ankr.com/eth`,
+          rpcTarget: "https://rpc.ankr.com/eth",
           blockExplorerUrl: "https://etherscan.io/",
           ticker: "ETH",
           tickerName: "Ethereum",
           logo: "https://images.toruswallet.io/eth.svg",
           chainNamespace: CHAIN_NAMESPACES.EIP155,
-        }
-        const privateKeyProvider = new EthereumPrivateKeyProvider({ config: { chainConfig } });
+        };
+        const privateKeyProvider = new EthereumPrivateKeyProvider({
+          config: { chainConfig },
+        });
 
         const web3auth = new Web3AuthNoModal({
           clientId,
           web3AuthNetwork: "sapphire_devnet",
-          privateKeyProvider
+          privateKeyProvider,
+          enableLogging: true,
         });
 
         setWeb3auth(web3auth);
 
-        const wcAdapter = new WalletConnectV2Adapter();
         const coinbase = new CoinbaseAdapter();
         const authAdapter = new AuthAdapter();
         web3auth.configureAdapter(authAdapter);
-        
-        web3auth.configureAdapter(wcAdapter)
 
-        web3auth.configureAdapter(coinbase)
+        // Configure this project id on Web3Auth Dashboard for the project you put the client id of
+        const defaultWcSettings = await getWalletConnectV2Settings(
+          CHAIN_NAMESPACES.EIP155,
+          ["0x1", "0xaa36a7"],
+          "04309ed1007e77d1f119b85205bb779d"
+        );
+        const walletConnectModal = new WalletConnectModal({
+          projectId: "04309ed1007e77d1f119b85205bb779d",
+        });
+        const wcAdapter = new WalletConnectV2Adapter({
+          adapterSettings: {
+            qrcodeModal: walletConnectModal,
+            ...defaultWcSettings.adapterSettings,
+          },
+          loginSettings: { ...defaultWcSettings.loginSettings },
+        });
+        web3auth.configureAdapter(wcAdapter);
+
+        web3auth.configureAdapter(coinbase);
 
         await web3auth.init();
         if (web3auth.connectedAdapterName && web3auth.provider) {
@@ -64,8 +93,13 @@ function App() {
       uiConsole("web3auth not initialized yet");
       return;
     }
-    const web3authProvider = await web3auth.connectTo<AuthLoginParams>(WALLET_ADAPTERS.AUTH, { loginProvider: "apple" });
-    setProvider(web3authProvider);
+    if (web3auth.status === "ready") {
+      const web3authProvider = await web3auth.connectTo<AuthLoginParams>(
+        WALLET_ADAPTERS.AUTH,
+        { loginProvider: "google" }
+      );
+      setProvider(web3authProvider);
+    }
   };
 
   const loginCoinbase = async () => {
@@ -73,18 +107,24 @@ function App() {
       uiConsole("web3auth not initialized yet");
       return;
     }
-    const web3authProvider = await web3auth.connectTo<void>(WALLET_ADAPTERS.COINBASE);
+    const web3authProvider = await web3auth.connectTo<void>(
+      WALLET_ADAPTERS.COINBASE
+    );
     setProvider(web3authProvider);
-  }
+  };
 
   const loginWalletConnect = async () => {
     if (!web3auth) {
       uiConsole("web3auth not initialized yet");
       return;
     }
-    const web3authProvider = await web3auth.connectTo<void>(WALLET_ADAPTERS.WALLET_CONNECT_V2);
-    setProvider(web3authProvider);
-  }
+    if (web3auth.status === "ready") {
+      const web3authProvider = await web3auth.connectTo(
+        WALLET_ADAPTERS.WALLET_CONNECT_V2
+      );
+      setProvider(web3authProvider);
+    }
+  };
 
   const authenticateUser = async () => {
     if (!web3auth) {
@@ -204,7 +244,11 @@ function App() {
   function uiConsole(...args: any[]): void {
     const el = document.querySelector("#console>p");
     if (el) {
-      el.innerHTML = JSON.stringify(args || {}, (key, value) => (typeof value === "bigint" ? value.toString() : value), 2);
+      el.innerHTML = JSON.stringify(
+        args || {},
+        (key, value) => (typeof value === "bigint" ? value.toString() : value),
+        2
+      );
     }
   }
 
@@ -276,16 +320,15 @@ function App() {
   const unloggedInView = (
     <>
       <button onClick={login} className="card">
-      Login
-    </button>
-    <button onClick={loginCoinbase} className="card">
-      Login coinbase
-    </button>
-    <button onClick={loginWalletConnect} className="card">
-      Login walletconnect
-    </button>
+        Login
+      </button>
+      <button onClick={loginCoinbase} className="card">
+        Login coinbase
+      </button>
+      <button onClick={loginWalletConnect} className="card">
+        Login walletconnect
+      </button>
     </>
-  
   );
 
   return (
@@ -297,14 +340,15 @@ function App() {
         & ReactJS Example
       </h1>
 
-      <div className="grid">{provider ? loggedInView : unloggedInView}</div>
+      <div className="grid">
+        {web3auth?.connected ? loggedInView : unloggedInView}
+      </div>
 
       <footer className="footer">
         <a
           href="https://github.com/Web3Auth/examples/tree/master/web-no-modal-sdk/evm/react-evm-no-modal-example"
           target="_blank"
-          rel="noopener noreferrer"
-        >
+          rel="noopener noreferrer">
           Source code
         </a>
       </footer>
