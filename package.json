@@ -31,7 +31,8 @@
     "build": "react-app-rewired build",
     "test": "react-app-rewired test",
     "eject": "react-scripts eject",
-    "lint": "react-scripts lint"
+    "lint": "react-scripts lint",
+    "postinstall": "patch-package"
   },
   "eslintConfig": {
     "extends": [
@@ -52,6 +53,7 @@
     ]
   },
   "devDependencies": {
+    "patch-package": "^8.0.0",
     "react-app-rewired": "^2.2.1",
     "webpack": "^5.94.0"
   }

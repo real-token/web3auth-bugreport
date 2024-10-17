@@ -117,7 +117,7 @@ function App() {
       try {
         const web3authProvider = await web3auth.connectTo<AuthLoginParams>(
           WALLET_ADAPTERS.AUTH,
-          { loginProvider: "google" }
+          { loginProvider: "line" }
         );
         setProvider(web3authProvider);
       }
