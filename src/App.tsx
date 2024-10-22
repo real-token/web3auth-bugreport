@@ -96,7 +96,7 @@ function App() {
         });
 
         const passkeysPlugin = new PasskeysPlugin({
-          rpID: "http://localhost",
+          rpID: "localhost",
           rpName: "Demo App",
         });
         setPasskeyPlugin(passkeysPlugin);
@@ -112,7 +112,6 @@ function App() {
         if (web3auth.connectedAdapterName && web3auth.provider) {
           setProvider(web3auth.provider);
         }
-        await passkeysPlugin.initWithWeb3Auth(web3auth)
       } catch (error) {
         console.error(error);
       }
