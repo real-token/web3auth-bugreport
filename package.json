@@ -17,6 +17,8 @@
     "@web3auth/coinbase-adapter": "^9.0.0",
     "@web3auth/ethereum-provider": "^9.0.0",
     "@web3auth/no-modal": "^9.0.0",
+    "@web3auth/passkeys-sfa-plugin": "^9.0.0",
+    "@web3auth/single-factor-auth": "^9.0.0",
     "@web3auth/wallet-connect-v2-adapter": "^9.0.0",
     "buffer": "^6.0.3",
     "react": "^18.3.1",

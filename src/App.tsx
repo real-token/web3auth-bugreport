@@ -17,12 +17,15 @@ import "./App.css";
 import RPC from "./web3RPC"; // for using web3.js
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
 
+import { PasskeysPlugin } from '@web3auth/passkeys-sfa-plugin'
+
 const clientId =
   "BHgArYmWwSeq21czpcarYh0EVq2WWOzflX-NTK-tY1-1pauPzHKRRLgpABkmYiIV_og9jAvoIxQ8L3Smrwe04Lw"; // get from https://dashboard.web3auth.io
 
 function App() {
   const [web3auth, setWeb3auth] = useState<Web3AuthNoModal | null>(null);
   const [isReady, setIsReady] = useState<'yes' | 'no'>('no')
+  const [passkeyPlugin, setPasskeyPlugin] = useState<PasskeysPlugin | undefined>(undefined)
   const [provider, setProvider] = useState<SafeEventEmitterProvider | null>(
     null
   );
@@ -91,6 +94,16 @@ function App() {
           },
           loginSettings: { ...defaultWcSettings.loginSettings },
         });
+
+        const passkeysPlugin = new PasskeysPlugin({
+          rpID: "http://localhost",
+          rpName: "Demo App",
+        });
+        setPasskeyPlugin(passkeysPlugin);
+
+        web3auth.addPlugin(passkeysPlugin); 
+
+
         web3auth.configureAdapter(wcAdapter);
 
         web3auth.configureAdapter(coinbase);
@@ -99,6 +112,7 @@ function App() {
         if (web3auth.connectedAdapterName && web3auth.provider) {
           setProvider(web3auth.provider);
         }
+        await passkeysPlugin.initWithWeb3Auth(web3auth)
       } catch (error) {
         console.error(error);
       }
@@ -159,13 +173,34 @@ function App() {
     uiConsole(idToken);
   };
 
+
+  const loginWithPasskey = async () => {
+    if (!web3auth) {
+      uiConsole("web3auth not initialized yet");
+      return;
+    }
+    await passkeyPlugin?.loginWithPasskey()
+  };
+
+  const registerKey = async () => {
+    if (!web3auth) {
+      uiConsole("web3auth not initialized yet");
+      return;
+    }
+    const userInfo = await web3auth.getUserInfo()
+    console.log(userInfo);
+    const username = `${userInfo.verifierId}-${userInfo.email}`
+    const result = await passkeyPlugin?.registerPasskey({ username })
+    uiConsole(`registerPasskey result: ${result}`);
+  };
+
   const getUserInfo = async () => {
     if (!web3auth) {
       uiConsole("web3auth not initialized yet");
       return;
     }
-    const user = await web3auth.getUserInfo();
-    uiConsole(user);
+    const userInfo = await web3auth.getUserInfo()
+    uiConsole(JSON.stringify(userInfo, null, 2));
   };
 
   const logout = async () => {
@@ -297,6 +332,11 @@ function App() {
           </button>
         </div>
         <div>
+          <button onClick={registerKey} className="card">
+            Register passkey
+          </button>
+        </div>
+        <div>
           <button onClick={addChain} className="card">
             Add Chain
           </button>
@@ -347,6 +387,9 @@ function App() {
     <>
       <button onClick={login} className="card">
         Login
+      </button>
+      <button onClick={loginWithPasskey} className="card">
+        Login passkey
       </button>
       <button onClick={loginCoinbase} className="card">
         Login coinbase
